@@ -8,7 +8,8 @@ jobs:
   diretory-print:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       
       - name: create-vite-env
         run: |
