@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="korit.com.make_fitness.mapper.ClassMapper">
+
+    <resultMap id="ClassResultMap" type="korit.com.make_fitness.entity.Class">
+        <id property="classId" column="class_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="classSubjectId" column="class_subject_id"/>
+        <result property="classTime" column="class_time"/>
+        <result property="classMaxCustomer" column="class_max_customer"/>
+        <result property="classCustomerReserve" column="class_customer_reserve"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <association property="user" javaType="korit.com.make_fitness.entity.User" resultMap="korit.com.make_fitness.mapper.UserMapper.UserResultMap" />
+        <association property="classSubject" javaType="korit.com.make_fitness.entity.ClassSubject">
+            <id property="classSubjectId" column="s_class_subject_id"/>
+            <result property="classSubjectName" column="class_subject_name"/>
+        </association>
+    </resultMap>
+
+    <insert id="insertClass" keyProperty="classId" useGeneratedKeys="true">
+        insert into class_tb
+        values
+        (
+            default,
+            #{userId},
+            #{classSubjectId},
+            #{classTime},
+            #{classMaxCustomer},
+            #{classCustomerReserve},
+            now(),
+            now()
+        )
+    </insert>
+
+    <update id="increaseCustomerReserve">
+        update class_tb
+        set
+            class_customer_reserve = class_customer_reserve + 1
+        where
+            class_id = #{classId}
+    </update>
+
+    <update id="decreaseCustomerReserve">
+        update class_tb
+        set
+            class_customer_reserve = greatest(0, class_customer_reserve - 1)
+        where
+            class_id = #{classId}
+    </update>
+
+    <delete id="deleteClassById">
+        delete from class_tb
+        where
+            class_id = #{classId}
+    </delete>
+
+    <select id="findAllUserAndSubject" resultMap="ClassResultMap">
+        select
+            c.class_id,
+            c.user_id,
+            s.class_subject_name,
+            c.class_time,
+            c.class_max_customer,
+            c.class_customer_reserve,
+            u.nickname,
+            u.ph,
+            u.gender
+        from
+            class_tb c
+            left join user_tb u on c.user_id = u.user_id
+            left join class_subject_tb s on c.class_subject_id = s.class_subject_id
+    </select>
+
+    <select id="findFiltered" resultMap="ClassResultMap">
+        select
+            c.class_id,
+            c.user_id,
+            c.class_subject_id as s_class_subject_id,
+            s.class_subject_name,
+            c.class_time,
+            c.class_max_customer,
+            c.class_customer_reserve,
+            c.created_at,
+            c.updated_at,
+            u.nickname,
+            u.ph,
+            u.gender
+        from
+            class_tb c
+            left join user_tb u on c.user_id = u.user_id
+            left join class_subject_tb s on c.class_subject_id = s.class_subject_id
+        where
+            1=1
+            <if test="subject != null and subject != ''">
+                and s.class_subject_name = #{subject}
+            </if>
+            <if test="manager != null and manager != ''">
+                and u.nickname like concat('%', #{manager}, '%')
+            </if>
+    </select>
+
+    <select id="findById" resultMap="ClassResultMap">
+        select
+            c.class_id,
+            c.user_id,
+            c.class_subject_id as s_class_subject_id,
+            s.class_subject_name,
+            c.class_time,
+            c.class_max_customer,
+            c.class_customer_reserve,
+            c.created_at,
+            c.updated_at,
+            u.nickname,
+            u.ph,
+            u.gender
+        from
+            class_tb c
+            left join user_tb u on c.user_id = u.user_id
+            left join class_subject_tb s on c.class_subject_id = s.class_subject_id
+        where
+            c.class_id = #{classId}
+    </select>
+
+    <select id="findClassWithReservations" resultType="korit.com.make_fitness.dto.response.RespClassReservationRow">
+        select
+            c.class_id            as classId,
+            c.class_time          as classTime,
+            cs.class_subject_name as subject,
+            c.class_max_customer  as maxCustomer,
+            c.class_customer_reserve as currentCustomer,
+            u.nickname            as reservedMember
+        from
+            class_tb c
+            join class_subject_tb cs on c.class_subject_id = cs.class_subject_id
+            left join reservation_tb r on c.class_id = r.class_id
+            left join membership_tb m on r.membership_id = m.membership_id
+            left join user_tb u ON m.user_id = u.user_id
+        where
+            c.user_id = #{managerId}
+        order by c.class_time asc
+    </select>
+
+    <select id="getAllowedSubjectIdsByTrainer" resultType="int">
+        select
+            distinct p.class_subject_id
+        from
+            pay_tb pay
+            join promotion_tb p on pay.promotion_id = p.promotion_id
+        where
+            pay.manager_id = #{userId}
+    </select>
+
+    <select id="existsByTrainerAndTime" resultType="boolean">
+        select
+            count(*) > 0
+        from
+            class_tb
+        where
+            user_id = #{userId} and class_time = #{classTime}
+    </select>
+
+    <select id="findRegisteredTimesByTrainerAndDate" resultType="int">
+        select
+            hour(class_time)
+        from
+            class_tb
+        where
+            user_id = #{userId} and date(class_time) = #{date}
+    </select>
+
+    <select id="findMembershipIdsByClassId" resultType="int">
+        select
+            distinct r.membership_id
+        from
+            reservation_tb r
+        where
+            r.class_id = #{classId}
+    </select>
+
+    <update id="restoreSessionCountsByMembershipIds">
+        update
+            membership_tb
+        set
+            promotion_session_count = promotion_session_count + 1
+        where
+            membership_id in
+            <foreach collection="membershipIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+    </update>
+
+</mapper>
