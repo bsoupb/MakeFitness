@@ -43,7 +43,7 @@ jobs:
 
       - name: print-directory
         run: |
-          ls =a front
+          ls -a front
           ls -a back/src/main/resources
 
       - name: DockerHub-LOGIN
