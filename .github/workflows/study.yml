@@ -73,4 +73,3 @@ jobs:
           host: ${{ secrets.EC2_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_KEY }}
-      - name: DOCKER-REACT-APP-PULL
