@@ -68,7 +68,7 @@
 
 ## 🧱 시스템 아키텍처
 
-plaintext
+
 [React] ←→ [Spring Boot + JWT + Swagger] ←→ [MySQL]
      ↑                             ↓
 [PortOne SDK]             [GitHub Actions + EC2]
