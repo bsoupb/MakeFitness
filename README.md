@@ -68,10 +68,25 @@
 
 ## 🧱 시스템 아키텍처
 
+## 🧩 기술 스택 & 아키텍처 구성
 
-[React] ←→ [Spring Boot + JWT + Swagger] ←→ [MySQL]
-     ↑                             ↓
-[PortOne SDK]             [GitHub Actions + EC2]
+```
+[React]
+   ↑
+   ↓
+[Spring Boot + JWT + Swagger]
+   ↑
+   ↓
+ [MySQL]
+
+※ 연동 서비스:
+  ↑
+  ↓
+[PortOne SDK]
+
+※ 배포 환경:
+[GitHub Actions + EC2]
+```
 
 ## 📂 프로젝트 구조
 ```
